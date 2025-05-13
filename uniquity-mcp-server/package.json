@@ -1,0 +1,48 @@
+{
+  "name": "uniquity-mcp-server",
+  "version": "0.1.0",
+  "description": "MCP server for UniquityReporter",
+  "main": "build/index.js",
+  "type": "module",
+  "bin": {
+    "uniquity-mcp-server": "./build/index.js"
+  },
+  "files": [
+    "build/**/*",
+    "README.md",
+    "LICENSE",
+    ".env.example"
+  ],
+  "scripts": {
+    "build": "rm -rf build && mkdir -p build && cp -r src/* build/",
+    "start": "node build/index.js",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "dotenv": "^16.4.5",
+    "winston": "^3.13.0",
+    "uniquity-reporter": "^1.2.0"
+  },
+  "devDependencies": {},
+  "keywords": [
+    "uniquity",
+    "mcp",
+    "ai",
+    "model-context-protocol"
+  ],
+  "author": "KunihiroS",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/KunihiroS/uniquity-mcp-server.git"
+  },
+  "bugs": {
+    "url": "https://github.com/KunihiroS/uniquity-mcp-server/issues"
+  },
+  "homepage": "https://github.com/KunihiroS/uniquity-mcp-server#readme",
+  "engines": {
+    "node": ">=18"
+  }
+}
+
