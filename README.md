@@ -182,3 +182,12 @@ MCP Serverは `repo=off` のみ対応です。
 - オプション値は省略可能です。省略時は `config/config.js` のデフォルト値が使われます。
 - `.env`ファイルはローカル開発用であり、MCP Host連携時は不要です。
 - コマンド引数（`--repo=on/off`や`--repofile`）はCLI動作制御用で、環境変数とは独立しています。
+
+## 開発進捗
+
+### 2025/5/13
+- MCP Server のCLI起動確認
+- MCP Host からの起動に失敗
+```
+MCP error -32000: Connection closed
+```
