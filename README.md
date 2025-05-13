@@ -108,96 +108,78 @@ npx uniquity-mcp-server
 - バージョン管理・リリースは本体と独立して行う
 - セキュリティ（APIキー等）は環境変数で管理し、コードに直接記載しない
 
+
+## MCP Host Settings
+
+### 必須・オプション環境変数
+- **必須（MCP Hostから必ず渡すこと）**
+    - `GITHUB_TOKEN` : GitHub API用トークン
+    - `OPENAI_API_KEY` : OpenAI APIキー
+    - `TAVILY_API_KEY` : Tavily APIキー
+- **オプション（未指定時はconfig/config.jsのデフォルト値が利用されます）**
+    - `OPENAI_MODEL` : 使用するOpenAIモデル名（例: o3-mini, gpt-4.1-nano など）
+    - `LOG_LEVEL` : ログ出力レベル（info, debug, warn, error）
+    - `LOG_FILE` : ログファイルのパス
+
+### 代表的なMCP Host設定例（repo=off固定）
+
+MCP Serverは `repo=off` のみ対応です。ファイル保存が必要な場合は、MCP Hostが受け取った標準出力を自分でファイル保存してください。
+
+```json
+{
+  "uniquity-mcp-server": {
+    "command": "npx",
+    "args": [
+      "-y",
+      "@kunihiros/uniquity-mcp-server",
+      "--repo=off"
+    ],
+    "env": {
+      "GITHUB_TOKEN": "{apikey}",
+      "OPENAI_API_KEY": "{apikey}",
+      "TAVILY_API_KEY": "{apikey}"
+    }
+  }
+}
+```
+
+- `repo` パラメータは必須で `off` 固定です。
+- レポートファイル保存（repo=on）はサポートしません。
+- ファイル保存が必要な場合は、Host側で標準出力をファイルに保存してください。
+- `LOG_FILE`（ログファイル名・パス）は環境変数で指定できますが、tool引数としてもoptionalで指定可能です。
+
+## 提供ツール一覧（MCP Server）
+
+### 1. analyze_repository
+- **説明**: 指定したGitHubリポジトリの類似性分析レポートを生成します。repo=off（標準出力のみ）で動作します。
+- **返却値**: Markdown形式のレポート本文（標準出力）
+
+| 引数         | 型      | 必須 | 説明                                      |
+|--------------|---------|------|-------------------------------------------|
+| repoUrl      | string  | ○    | 分析対象のGitHubリポジトリURL              |
+| openaiModel  | string  | ×    | 使用するOpenAIモデル名（例: o3-mini, gpt-4.1-nano など） |
+| logLevel     | string  | ×    | ログ出力レベル（info, debug, warn, error） |
+| logFile      | string  | ×    | ログファイルのパス（指定しない場合は環境変数LOG_FILE、なければデフォルト） |
+
+### 2. list_tools
+- **説明**: MCP Serverが提供するツールの一覧と仕様（引数・返却値）を返します。
+- **返却値**: MCP Serverで利用可能なツールの配列（各ツールのname, description, parameterSchema, returnSchemaを含む）
+
+| 引数 | 型 | 必須 | 説明 |
+|------|----|------|------|
+| なし |    |      |      |
+
 ---
 
-## memo
-### 2025/05/13 15:39
-```
-MCP Host の server呼び出し設定を整理していて気づいたことがあります
-まず、下記はUniquityReporterのコマンド及び .env 仕様についての抜粋です
+これにより、MCP Hostやクライアントから「どんなツールがあるか」「どう呼び出せばいいか」が明確に分かります。
 
-+++command
-# Save file (--repo=on and --repofile=<output directory> are both required)
-npx uniquity-reporter --repo=on --repofile=/absolute/path/to/reportdir <GitHub repository URL>
-# ...Save report to the specified directory (auto-generated file name)
+### 注意事項
+- MCP Serverは標準出力（repo=off）のみ対応です。ファイル保存はHost側で対応してください。
+- LOG_FILE, LOG_LEVEL, OPENAI_MODELはツール引数で動的に指定できます。
 
-# Standard output only (--repo=off, --repofile is not allowed)
-npx uniquity-reporter --repo=off <GitHub repository URL>
-# ...Standard output (no file is generated)
-+++
-
-下記は .env のサンプルです
-
-+++.env
-# GitHub settings
-# Optional (without this setting, you can analyze only public repositories)
-GITHUB_TOKEN=your_github_token_here
-
-# OpenAI settings
-# role "developer" (Reasoning model recommended)
-OPENAI_API_KEY=your_openai_api_key_here
-OPENAI_MODEL=o3-mini
-
-# Tavily settings
-TAVILY_API_KEY=your_tavily_api_key_here
-
-# Common settings
-NODE_ENV=production
-LOG_LEVEL=info
-+++
-
-上記を鑑みると MCP Host の設定は下記になると思います
-
-+++log==off
-Example: Logging Disabled
-"uniquity-mcp-server": {
-  "command": "npx",
-  "args": [
-        "-y",
-        "@kunihiros/uniquity-mcp-server",
-		"--repo=off",
-		"--log=off"
-      ],
-  "env": {
-	"GITHUB_TOKEN": "{apikey}",
-    "OPENAI_API_KEY": "{apikey}",
-	"TAVILY_API_KEY": "{apikey}",
-	"OPENAI_MODEL": "{model_name}"
-  }
-}
-
-+++log==on
-Example: Logging Enabled (absolute log file path required)
-"uniquity-mcp-server": {
-  "command": "npx",
-  "args": [
-        "-y",
-        "@kunihiros/uniquity-mcp-server",
-		"--repo=off",
-		"--log=on",
-		"--logfile=/workspace/logs/uniquity-mcp-server.log"
-      ],
-  "env": {
-	"GITHUB_TOKEN": "{apikey}",
-    "OPENAI_API_KEY": "{apikey}",
-	"TAVILY_API_KEY": "{apikey}",
-	"OPENAI_MODEL": "{model_name}"
-  }
-}
-
-以上を鑑みると下記の点整理が必要かと思います
-
-1. .env 必須呼び出しキー
-UniquityReporter では .env で secrets だけでなく他のキーも設定しています
-現状 UniquityReporter では process.env を使って secrets を読み込んで .env からではなく MCP Host からの呼び出しに対応できるように改造しています
-ただ、model も引き渡しは必要です
-これも MCP Host から引き渡しを受けて設定する必要があるので UniquityReporter の修正が必要かと思います
-
-2. ログの扱い
-通常私がこれまで作ってきたMCP Serverは上記のようなログ出力を機能を提供してきました
-UniquityReporterでもログが出るのですが、これは stdio で出ていると思われます (termninal で表示されるため)
-MCP ServerとしてのログとUniquityReporterのログをどう整理すべきか検討が必要だと思います
-その内容によっては、ログについてもUniquityReporterの改造が必要なるかと思います
-
-まずは状況を把握してください
-```
+### 注意事項
+- 必須APIキーが未設定の場合はエラーとなります。
+- オプション値は省略可能です。省略時は `config/config.js` のデフォルト値が使われます。
+- `.env`ファイルはローカル開発用であり、MCP Host連携時は不要です。
+- コマンド引数（`--repo=on/off`や`--repofile`）はCLI動作制御用で、環境変数とは独立しています。
+- **`--repo=on` を指定した場合、レポート内容は標準出力（stdio）には出力されず、指定したパスにファイルとして保存されます。MCP Hostで結果を取得したい場合は、指定PATHに保存されたレポートファイルをHost側で読み取る必要があります。**
