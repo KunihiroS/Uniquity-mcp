@@ -123,7 +123,7 @@ npx uniquity-mcp-server
 
 ### 代表的なMCP Host設定例（repo=off固定）
 
-MCP Serverは `repo=off` のみ対応です。ファイル保存が必要な場合は、MCP Hostが受け取った標準出力を自分でファイル保存してください。
+MCP Serverは `repo=off` のみ対応です。
 
 ```json
 {
@@ -151,7 +151,7 @@ MCP Serverは `repo=off` のみ対応です。ファイル保存が必要な場�
 ## 提供ツール一覧（MCP Server）
 
 ### 1. analyze_repository
-- **説明**: 指定したGitHubリポジトリの類似性分析レポートを生成します。repo=off（標準出力のみ）で動作します。
+- **説明**: 指定したGitHubリポジトリの類似性分析レポートを生成します。レポートは常に標準出力にMarkdown形式で返されます。
 - **返却値**: Markdown形式のレポート本文（標準出力）
 
 | 引数         | 型      | 必須 | 説明                                      |
@@ -174,7 +174,7 @@ MCP Serverは `repo=off` のみ対応です。ファイル保存が必要な場�
 これにより、MCP Hostやクライアントから「どんなツールがあるか」「どう呼び出せばいいか」が明確に分かります。
 
 ### 注意事項
-- MCP Serverは標準出力（repo=off）のみ対応です。ファイル保存はHost側で対応してください。
+- MCP Serverは標準出力（repo=off）のみ対応です。
 - LOG_FILE, LOG_LEVEL, OPENAI_MODELはツール引数で動的に指定できます。
 
 ### 注意事項
@@ -182,9 +182,3 @@ MCP Serverは `repo=off` のみ対応です。ファイル保存が必要な場�
 - オプション値は省略可能です。省略時は `config/config.js` のデフォルト値が使われます。
 - `.env`ファイルはローカル開発用であり、MCP Host連携時は不要です。
 - コマンド引数（`--repo=on/off`や`--repofile`）はCLI動作制御用で、環境変数とは独立しています。
-- **`--repo=on` を指定した場合、レポート内容は標準出力（stdio）には出力されず、指定したパスにファイルとして保存されます。MCP Hostで結果を取得したい場合は、指定PATHに保存されたレポートファイルをHost側で読み取る必要があります。**
-
-## 開発進捗
-### 2025/05/13 18:12
-- README更新
-- READMEに合わせて実際の実装を行う必要がある
