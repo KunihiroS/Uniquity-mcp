@@ -66,13 +66,13 @@ server.tool(
 
       const env = { ...process.env };
       if (openaiModel) {
-        env.UNIQUITY_OPENAI_MODEL = openaiModel;
+        env.OPENAI_MODEL = openaiModel;
       }
       if (logLevel) {
-        env.UNIQUITY_LOG_LEVEL = logLevel;
+        env.LOG_LEVEL = logLevel;
       }
       if (logFile) {
-        env.UNIQUITY_LOG_FILE = logFile;
+        env.LOG_FILE = logFile;
       }
 
       // [LOG] Spawning uniquity-reporter, args/envは必要に応じてstderr/logファイルへ
