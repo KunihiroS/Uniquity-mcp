@@ -1,19 +1,14 @@
 #!/usr/bin/env node
 
-console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-console.log("!!! Uniquity MCP Server SCRIPT EXECUTION STARTED (index.js) !!!");
-console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 
 // MCP ServerとしてUniquityReporter CLIをラップし、MCP Hostからのリクエストを受けて実行する
 const { McpServer } = require('@modelcontextprotocol/sdk/server/mcp.js');
 const { StdioServerTransport } = require('@modelcontextprotocol/sdk/server/stdio.js');
 const { spawn } = require('child_process');
 const zod = require('zod');
-console.log("[LOG] Modules imported.");
 
 // process.stdin と process.stdout を明示的に渡す
 const transport = new StdioServerTransport(process.stdin, process.stdout);
-console.log("[LOG] StdioServerTransport instance created.");
 
 const server = new McpServer({
   name: "uniquity-mcp-server",
@@ -22,7 +17,6 @@ const server = new McpServer({
   transport: transport, // transport インスタンスをここで指定
   // Optional: Add more server configurations if needed
 });
-console.log("[LOG] McpServer instance created.");
 
 // Define the schema for the analyze_repository tool parameters
 const AnalyzeRepositoryParamsSchema = zod.object({
@@ -35,16 +29,14 @@ const AnalyzeRepositoryParamsSchema = zod.object({
   logLevel: zod.enum(['error', 'warn', 'info', 'debug', 'trace']).optional(),
   logFile: zod.string().optional(),
 });
-console.log("[LOG] AnalyzeRepositoryParamsSchema defined.");
 
-console.log("[LOG] Attempting to define 'analyze_repository' tool...");
 server.tool(
   'analyze_repository',
   'Analyzes a Git repository and generates a report using Uniquity Reporter. The analysis is performed with repo=off mode, meaning no local repository copy is created or persisted.',
   AnalyzeRepositoryParamsSchema,
   {}, // annotations (空のオブジェクトまたはnull/undefined)
   async (params) => {
-    console.log("[LOG] 'analyze_repository' tool handler invoked with params:", params);
+    // [LOG] 'analyze_repository' tool handler invoked (paramsは必要に応じてstderr/logファイルへ)
     return new Promise((resolve, reject) => {
       const {
         repositoryUrl,
@@ -83,9 +75,7 @@ server.tool(
         env.UNIQUITY_LOG_FILE = logFile;
       }
 
-      console.log(`[LOG] Spawning uniquity-reporter with args: ${commandArgs.join(' ')}`);
-      console.log(`[LOG] Environment variables for spawn: UNIQUITY_OPENAI_MODEL=${env.UNIQUITY_OPENAI_MODEL}, UNIQUITY_LOG_LEVEL=${env.UNIQUITY_LOG_LEVEL}, UNIQUITY_LOG_FILE=${env.UNIQUITY_LOG_FILE}`);
-
+      // [LOG] Spawning uniquity-reporter, args/envは必要に応じてstderr/logファイルへ
 
       const child = spawn('uniquity-reporter', commandArgs, { env });
       let stdoutData = '';
@@ -93,7 +83,7 @@ server.tool(
 
       child.stdout.on('data', (data) => {
         stdoutData += data.toString();
-        console.log(`[LOG] uniquity-reporter stdout: ${data}`);
+        // [LOG] uniquity-reporter stdout: ログは必要に応じてstderr/logファイルへ
       });
 
       child.stderr.on('data', (data) => {
@@ -107,12 +97,12 @@ server.tool(
       });
 
       child.on('close', (code) => {
-        console.log(`[LOG] uniquity-reporter process exited with code ${code}`);
+        // [LOG] uniquity-reporter process exited with code (stderr/logファイルへ)
         if (code === 0) {
           try {
             // Assuming the report is JSON output to stdout
             const report = JSON.parse(stdoutData);
-            console.log("[LOG] uniquity-reporter output parsed successfully.");
+            // [LOG] uniquity-reporter output parsed successfully.
             resolve(report);
           } catch (e) {
             console.error("[LOG] Failed to parse uniquity-reporter output as JSON:", e);
@@ -128,11 +118,9 @@ server.tool(
     });
   }
 );
-console.log("[LOG] 'analyze_repository' tool defined.");
 
-console.log("[LOG] Attempting to start transport...");
 transport.start().then(() => {
-  console.log('[LOG] Uniquity MCP Server started successfully via transport.start().');
+  // [LOG] Uniquity MCP Server started successfully via transport.start().
 }).catch((error) => {
   console.error('[LOG] Failed to start Uniquity MCP Server via transport.start():', error);
   process.exit(1);
@@ -140,9 +128,9 @@ transport.start().then(() => {
 
 // Graceful shutdown
 process.on('SIGINT', () => {
-  console.log('[LOG] SIGINT received, shutting down Uniquity MCP Server...');
+  // [LOG] SIGINT received, shutting down Uniquity MCP Server...
   transport.stop().then(() => {
-    console.log('[LOG] Server stopped via SIGINT.');
+    // [LOG] Server stopped via SIGINT.
     process.exit(0);
   }).catch(err => {
     console.error('[LOG] Error stopping server via SIGINT:', err);
@@ -151,9 +139,9 @@ process.on('SIGINT', () => {
 });
 
 process.on('SIGTERM', () => {
-  console.log('[LOG] SIGTERM received, shutting down Uniquity MCP Server...');
+  // [LOG] SIGTERM received, shutting down Uniquity MCP Server...
   transport.stop().then(() => {
-    console.log('[LOG] Server stopped via SIGTERM.');
+    // [LOG] Server stopped via SIGTERM.
     process.exit(0);
   }).catch(err => {
     console.error('[LOG] Error stopping server via SIGTERM:', err);
