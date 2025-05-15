@@ -191,3 +191,13 @@ MCP Serverは `repo=off` のみ対応です。
 ```
 MCP error -32000: Connection closed
 ```
+
+### 2025/5/15
+- MCP Serverの接続確認済み
+- Toolの引数受付が適切になされていない
+  そもそも tool 取る引数が表示されない
+  コードを修正したがまだだめ
+  コードの見直しが必要
+- デバッグ手続き
+  pnpm run build
+  npx @modelcontextprotocol/inspector node /home/kunihiros/project/Uniquity-mcp/uniquity-mcp/build/index.js
