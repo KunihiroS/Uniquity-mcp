@@ -7,17 +7,20 @@ const { StdioServerTransport } = require('@modelcontextprotocol/sdk/server/stdio
 const { spawn } = require('child_process');
 const zod = require('zod');
 
+console.log('[LOG] Script started.');
+
 // process.stdin と process.stdout を明示的に渡す
 const transport = new StdioServerTransport(process.stdin, process.stdout);
+console.log('[LOG] StdioServerTransport initialized.');
 
 const server = new McpServer({
   name: "uniquity-mcp-server",
   version: "0.1.0",
   description: "MCP Server for Uniquity Reporter",
-  transport: transport, // transport インスタンスをここで指定
   // Optional: Add more server configurations if needed
 });
 
+console.log('[LOG] McpServer instance created.');
 // Define the schema for the analyze_repository tool parameters
 const AnalyzeRepositoryParamsSchema = zod.object({
   repositoryUrl: zod.string().url(),
@@ -29,6 +32,7 @@ const AnalyzeRepositoryParamsSchema = zod.object({
   logLevel: zod.enum(['error', 'warn', 'info', 'debug', 'trace']).optional(),
   logFile: zod.string().optional(),
 });
+console.log('[LOG] AnalyzeRepositoryParamsSchema defined.');
 
 server.tool(
   'analyze_repository',
@@ -36,7 +40,7 @@ server.tool(
   AnalyzeRepositoryParamsSchema,
   {}, // annotations (空のオブジェクトまたはnull/undefined)
   async (params) => {
-    // [LOG] 'analyze_repository' tool handler invoked (paramsは必要に応じてstderr/logファイルへ)
+    console.log('[LOG] "analyze_repository" tool handler invoked.');
     return new Promise((resolve, reject) => {
       const {
         repositoryUrl,
@@ -75,7 +79,7 @@ server.tool(
         env.LOG_FILE = logFile;
       }
 
-      // [LOG] Spawning uniquity-reporter, args/envは必要に応じてstderr/logファイルへ
+      console.log('[LOG] Spawning uniquity-reporter with args:', commandArgs);
 
       const child = spawn('uniquity-reporter', commandArgs, { env });
       let stdoutData = '';
@@ -83,7 +87,7 @@ server.tool(
 
       child.stdout.on('data', (data) => {
         stdoutData += data.toString();
-        // [LOG] uniquity-reporter stdout: ログは必要に応じてstderr/logファイルへ
+        // console.log('[LOG] uniquity-reporter stdout chunk received.'); // Too verbose?
       });
 
       child.stderr.on('data', (data) => {
@@ -97,11 +101,11 @@ server.tool(
       });
 
       child.on('close', (code) => {
-        // [LOG] uniquity-reporter process exited with code (stderr/logファイルへ)
+        console.log(`[LOG] uniquity-reporter process exited with code ${code}.`);
         if (code === 0) {
           try {
             // Assuming the report is JSON output to stdout
-            const report = JSON.parse(stdoutData);
+            const report = JSON.parse(stdoutData.trim()); // Trim whitespace before parsing
             // [LOG] uniquity-reporter output parsed successfully.
             resolve(report);
           } catch (e) {
@@ -118,18 +122,19 @@ server.tool(
     });
   }
 );
+console.log('[LOG] "analyze_repository" tool registered.');
 
-transport.start().then(() => {
-  // [LOG] Uniquity MCP Server started successfully via transport.start().
+server.connect(transport).then(() => {
+  console.log('[LOG] Uniquity MCP Server connected successfully via server.connect().');
 }).catch((error) => {
-  console.error('[LOG] Failed to start Uniquity MCP Server via transport.start():', error);
+  console.error('[LOG] Failed to connect Uniquity MCP Server via server.connect():', error);
   process.exit(1);
 });
 
 // Graceful shutdown
 process.on('SIGINT', () => {
   // [LOG] SIGINT received, shutting down Uniquity MCP Server...
-  transport.stop().then(() => {
+  server.close().then(() => {
     // [LOG] Server stopped via SIGINT.
     process.exit(0);
   }).catch(err => {
@@ -137,10 +142,11 @@ process.on('SIGINT', () => {
     process.exit(1);
   });
 });
+console.log('[LOG] SIGINT handler registered.');
 
 process.on('SIGTERM', () => {
   // [LOG] SIGTERM received, shutting down Uniquity MCP Server...
-  transport.stop().then(() => {
+  server.close().then(() => {
     // [LOG] Server stopped via SIGTERM.
     process.exit(0);
   }).catch(err => {
@@ -148,3 +154,4 @@ process.on('SIGTERM', () => {
     process.exit(1);
   });
 });
+console.log('[LOG] SIGTERM handler registered.');

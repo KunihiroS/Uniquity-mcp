@@ -16,7 +16,8 @@
   "scripts": {
     "build": "rm -rf build && mkdir -p build && cp -r src/* build/",
     "start": "node build/index.js",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "pnpm run build",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.11.2",
