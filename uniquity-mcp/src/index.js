@@ -7,11 +7,11 @@ const { StdioServerTransport } = require('@modelcontextprotocol/sdk/server/stdio
 const { spawn } = require('child_process');
 const zod = require('zod');
 
-console.log('[LOG] Script started.');
+console.error('[LOG] Script started.'); // Output to stderr
 
 // process.stdin と process.stdout を明示的に渡す
 const transport = new StdioServerTransport(process.stdin, process.stdout);
-console.log('[LOG] StdioServerTransport initialized.');
+console.error('[LOG] StdioServerTransport initialized.'); // Output to stderr
 
 const server = new McpServer({
   name: "uniquity-mcp",
@@ -20,7 +20,7 @@ const server = new McpServer({
   // Optional: Add more server configurations if needed
 });
 
-console.log('[LOG] McpServer instance created.');
+console.error('[LOG] McpServer instance created.'); // Output to stderr
 // Define the schema for the analyze_repository tool parameters
 const AnalyzeRepositoryParamsSchema = zod.object({
   repositoryUrl: zod.string().url(), // Required positional argument
@@ -29,15 +29,41 @@ const AnalyzeRepositoryParamsSchema = zod.object({
   logLevel: zod.enum(['info', 'debug', 'warn', 'error']).optional(), // Align with README.md (info, debug, warn, error)
   logFile: zod.string().optional(),
 });
-console.log('[LOG] AnalyzeRepositoryParamsSchema defined.');
+console.error('[LOG] AnalyzeRepositoryParamsSchema defined.'); // Output to stderr
+
+// Manually define the JSON Schema for the tool's input parameters
+const AnalyzeRepositoryInputSchema = {
+  type: "object",
+  properties: {
+    repositoryUrl: {
+      type: "string",
+      format: "url",
+      description: "The URL of the Git repository to analyze."
+    },
+    openaiModel: {
+      type: "string",
+      description: "Optional: The OpenAI model to use (e.g., gpt-4o-mini)."
+    },
+    logLevel: {
+      type: "string",
+      enum: ['info', 'debug', 'warn', 'error'],
+      description: "Optional: The log level for the reporter."
+    },
+    logFile: {
+      type: "string",
+      description: "Optional: The path to a log file for the reporter."
+    }
+  },
+  required: ["repositoryUrl"]
+};
 
 server.tool(
   'analyze_repository',
   'Analyzes a Git repository and generates a report using Uniquity Reporter. The analysis is performed with repo=off mode, meaning no local repository copy is created or persisted.',
-  AnalyzeRepositoryParamsSchema,
+  AnalyzeRepositoryInputSchema, // Use the manually defined JSON Schema
   {}, // annotations (空のオブジェクトまたはnull/undefined)
   async (params) => {
-    console.log('[LOG] "analyze_repository" tool handler invoked.');
+    console.error('[LOG] "analyze_repository" tool handler invoked.'); // Output to stderr
     return new Promise((resolve, reject) => {
       const {
         repositoryUrl,
@@ -63,7 +89,7 @@ server.tool(
         env.LOG_FILE = logFile;
       }
 
-      console.log('[LOG] Spawning uniquity-reporter with args:', commandArgs);
+      console.error('[LOG] Spawning uniquity-reporter with args:', commandArgs); // Output to stderr
 
       const child = spawn('uniquity-reporter', commandArgs, { env });
       let stdoutData = '';
@@ -71,7 +97,7 @@ server.tool(
 
       child.stdout.on('data', (data) => {
         stdoutData += data.toString();
-        // console.log('[LOG] uniquity-reporter stdout chunk received.'); // Too verbose?
+        // console.error('[LOG] uniquity-reporter stdout chunk received.'); // If needed, output to stderr
       });
 
       child.stderr.on('data', (data) => {
@@ -85,18 +111,17 @@ server.tool(
       });
 
       child.on('close', (code) => {
-        console.log(`[LOG] uniquity-reporter process exited with code ${code}.`);
+        console.error(`[LOG] uniquity-reporter process exited with code ${code}.`); // Output to stderr
         if (code === 0) {
-          try {
-            // Assuming the report is JSON output to stdout
-            const report = JSON.parse(stdoutData.trim()); // Trim whitespace before parsing
-            // [LOG] uniquity-reporter output parsed successfully.
-            resolve(report);
-          } catch (e) {
-            console.error("[LOG] Failed to parse uniquity-reporter output as JSON:", e);
-            // If stdout is not JSON or empty, but exit code is 0,
-            // consider what to return. For now, returning stdout as is.
-            resolve({ rawOutput: stdoutData, message: "Process completed successfully, but output was not valid JSON." });
+          // README states the output is Markdown.
+          // Return it in the standard MCP tool result format.
+          if (stdoutData.trim() === '') {
+            console.error("[WARN] uniquity-reporter output was empty, but process exited successfully."); // Output to stderr
+            // MCP Host might expect content, so provide a placeholder.
+            resolve({ content: [{ type: "text", text: "(No output from reporter)" }] });
+          } else {
+            console.error("[LOG] Raw stdoutData from uniquity-reporter (trimmed):", `"${stdoutData.trim()}"`); // Output to stderr
+            resolve({ content: [{ type: "text", text: stdoutData.trim() }] });
           }
         } else {
           console.error(`[LOG] uniquity-reporter failed with code ${code}. Stderr: ${stderrData}`);
@@ -106,10 +131,10 @@ server.tool(
     });
   }
 );
-console.log('[LOG] "analyze_repository" tool registered.');
+console.error('[LOG] "analyze_repository" tool registered.'); // Output to stderr
 
 server.connect(transport).then(() => {
-  console.log('[LOG] Uniquity-mcp Server connected successfully via server.connect().');
+  console.error('[LOG] Uniquity-mcp Server connected successfully via server.connect().'); // Output to stderr
 }).catch((error) => {
   console.error('[LOG] Failed to connect Uniquity MCP Server via server.connect():', error);
   process.exit(1);
@@ -118,7 +143,7 @@ server.connect(transport).then(() => {
 // Graceful shutdown
 process.on('SIGINT', () => {
   // [LOG] SIGINT received, shutting down Uniquity MCP Server...
-  server.close().then(() => { // Use server.close() as per SDK docs
+  server.close().then(() => {
     // [LOG] Server stopped via SIGINT.
     process.exit(0);
   }).catch(err => {
@@ -126,11 +151,11 @@ process.on('SIGINT', () => {
     process.exit(1);
   });
 });
-console.log('[LOG] SIGINT handler registered.');
+console.error('[LOG] SIGINT handler registered.'); // Output to stderr
 
 process.on('SIGTERM', () => {
   // [LOG] SIGTERM received, shutting down Uniquity MCP Server...
-  server.close().then(() => { // Use server.close() as per SDK docs
+  server.close().then(() => {
     // [LOG] Server stopped via SIGTERM.
     process.exit(0);
   }).catch(err => {
@@ -138,4 +163,4 @@ process.on('SIGTERM', () => {
     process.exit(1);
   });
 });
-console.log('[LOG] SIGTERM handler registered.');
+console.error('[LOG] SIGTERM handler registered.'); // Output to stderr
