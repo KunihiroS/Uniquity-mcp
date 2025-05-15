@@ -1,6 +1,6 @@
-# Uniquity MCP Server
+# Uniquity-mcp
 
-Uniquity MCP Serverは、UniquityReporterの機能をMCP（Model Context Protocol）経由で外部ツールやエージェントから利用可能にするためのラッパーサーバです。
+Uniquity-mcpは、UniquityReporterの機能をMCP（Model Context Protocol）経由で外部ツールやエージェントから利用可能にするためのラッパーサーバです。
 
 ## 目的
 

@@ -14,7 +14,7 @@ const transport = new StdioServerTransport(process.stdin, process.stdout);
 console.log('[LOG] StdioServerTransport initialized.');
 
 const server = new McpServer({
-  name: "uniquity-mcp-server",
+  name: "uniquity-mcp",
   version: "0.1.0",
   description: "MCP Server for Uniquity Reporter",
   // Optional: Add more server configurations if needed
@@ -23,13 +23,10 @@ const server = new McpServer({
 console.log('[LOG] McpServer instance created.');
 // Define the schema for the analyze_repository tool parameters
 const AnalyzeRepositoryParamsSchema = zod.object({
-  repositoryUrl: zod.string().url(),
-  analysisTypes: zod.array(zod.string()).optional(),
-  excludePatterns: zod.array(zod.string()).optional(),
-  includePatterns: zod.array(zod.string()).optional(),
-  maxFileSize: zod.number().int().positive().optional(),
+  repositoryUrl: zod.string().url(), // Required positional argument
+  // Optional parameters based on README.md "提供ツール一覧"
   openaiModel: zod.string().optional(),
-  logLevel: zod.enum(['error', 'warn', 'info', 'debug', 'trace']).optional(),
+  logLevel: zod.enum(['info', 'debug', 'warn', 'error']).optional(), // Align with README.md (info, debug, warn, error)
   logFile: zod.string().optional(),
 });
 console.log('[LOG] AnalyzeRepositoryParamsSchema defined.');
@@ -44,31 +41,18 @@ server.tool(
     return new Promise((resolve, reject) => {
       const {
         repositoryUrl,
-        analysisTypes,
-        excludePatterns,
-        includePatterns,
-        maxFileSize,
         openaiModel,
         logLevel,
-        logFile,
+        logFile
       } = params;
 
-      const commandArgs = ['--repo=off', `--repository-url=${repositoryUrl}`];
+      // Based on the provided CLI spec, command args are just --repo=off and the URL.
+      const commandArgs = ['--repo=off', repositoryUrl];
 
-      if (analysisTypes && analysisTypes.length > 0) {
-        commandArgs.push(`--analysis-types=${analysisTypes.join(',')}`);
-      }
-      if (excludePatterns && excludePatterns.length > 0) {
-        commandArgs.push(`--exclude-patterns=${excludePatterns.join(',')}`);
-      }
-      if (includePatterns && includePatterns.length > 0) {
-        commandArgs.push(`--include-patterns=${includePatterns.join(',')}`);
-      }
-      if (maxFileSize) {
-        commandArgs.push(`--max-file-size=${maxFileSize}`);
-      }
-
-      const env = { ...process.env };
+      // Environment variables are set based on optional tool parameters
+      // as per README.md "提供ツール一覧" and "注意事項".
+      // These will override any existing environment variables from the MCP Host if provided.
+      const env = { ...process.env }; // Keep existing process environment
       if (openaiModel) {
         env.OPENAI_MODEL = openaiModel;
       }
@@ -125,7 +109,7 @@ server.tool(
 console.log('[LOG] "analyze_repository" tool registered.');
 
 server.connect(transport).then(() => {
-  console.log('[LOG] Uniquity MCP Server connected successfully via server.connect().');
+  console.log('[LOG] Uniquity-mcp Server connected successfully via server.connect().');
 }).catch((error) => {
   console.error('[LOG] Failed to connect Uniquity MCP Server via server.connect():', error);
   process.exit(1);
@@ -134,7 +118,7 @@ server.connect(transport).then(() => {
 // Graceful shutdown
 process.on('SIGINT', () => {
   // [LOG] SIGINT received, shutting down Uniquity MCP Server...
-  server.close().then(() => {
+  server.close().then(() => { // Use server.close() as per SDK docs
     // [LOG] Server stopped via SIGINT.
     process.exit(0);
   }).catch(err => {
@@ -146,7 +130,7 @@ console.log('[LOG] SIGINT handler registered.');
 
 process.on('SIGTERM', () => {
   // [LOG] SIGTERM received, shutting down Uniquity MCP Server...
-  server.close().then(() => {
+  server.close().then(() => { // Use server.close() as per SDK docs
     // [LOG] Server stopped via SIGTERM.
     process.exit(0);
   }).catch(err => {

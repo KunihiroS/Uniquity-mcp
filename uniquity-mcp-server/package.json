@@ -1,11 +1,11 @@
 {
-  "name": "uniquity-mcp-server",
+  "name": "uniquity-mcp",
   "version": "0.1.0",
   "description": "MCP server for UniquityReporter",
   "type": "commonjs",
   "main": "build/index.js",
   "bin": {
-    "uniquity-mcp-server": "./build/index.js"
+    "uniquity-mcp": "./build/index.js"
   },
   "files": [
     "build/**/*",
@@ -27,6 +27,7 @@
     "zod": "^3.24.4"
   },
   "keywords": [
+    "uniquity-mcp",
     "uniquity",
     "mcp",
     "ai",
