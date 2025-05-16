@@ -17,6 +17,7 @@ const { Server } = require('@modelcontextprotocol/sdk/server/index.js'); // clau
 // const { Server } = require('@modelcontextprotocol/sdk');
 const { StdioServerTransport } = require('@modelcontextprotocol/sdk/server/stdio.js');
 const { spawn } = require('child_process');
+const path = require('path'); // pathモジュールをインポート
 const zod = require('zod');
 
 console.error('[LOG] Script started.'); // Output to stderr
@@ -69,9 +70,14 @@ const handleAnalyzeRepository = async (params) => {
         env.LOG_FILE = logFile;
       }
 
-      console.error('[LOG] Spawning uniquity-reporter with args:', commandArgs); // Output to stderr
+      // uniquity-reporterへのパスを解決
+      // __dirname は build/ ディレクトリを指すため、node_modules は一つ上の階層にある
+      const reporterPath = path.resolve(__dirname, '..', 'node_modules', '.bin', 'uniquity-reporter');
 
-      const child = spawn('uniquity-reporter', commandArgs, { env });
+      console.error('[LOG] Spawning uniquity-reporter with args:', commandArgs); // Output to stderr
+      console.error('[LOG] Resolved reporter path:', reporterPath); // デバッグ用にパスを出力
+
+      const child = spawn(reporterPath, commandArgs, { env }); // フルパスで指定
       let stdoutData = '';
       let stderrData = '';
 
