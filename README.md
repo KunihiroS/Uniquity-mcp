@@ -201,3 +201,15 @@ MCP error -32000: Connection closed
 - デバッグ手続き
   pnpm run build
   npx @modelcontextprotocol/inspector node /home/kunihiros/project/Uniquity-mcp/uniquity-mcp/build/index.js
+
+### 2025/5/16
+- Roo Codeからの本サーバー呼び出しを確認し、実際に動作した
+- 但しいくつか課題がある
+1. オプション引数の model 指定が正しく動作していない模様
+gpt-4.1-nano で実行したが、動作結果は uniquity-reporter がデフォルト指定している o3-mini で実行されている模様
+uniquiy-reporter 側の実装が mcp-server からの引数受取を適切に行っていない可能性が高い
+2. logLevel および logFile のオプションの仕様の曖昧さ
+uniquity-repoter 側でとくに logFile の書き出しがどのように処理されるのかが不明確
+本mcp-serverでは repo=off がハードコーディングされており、その仕様については要求通りだが log 記録と書き出しについては要求が曖昧で実際の実装が把握できていない
+
+上記いずれも調査対象は uniquity-reporter
