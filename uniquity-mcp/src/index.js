@@ -1,8 +1,20 @@
 #!/usr/bin/env node
 
 
+try {
+  const sdkTypes = require('@modelcontextprotocol/sdk/types.js');
+  console.error('[DEBUG] sdkTypes imported object:', JSON.stringify(Object.keys(sdkTypes), null, 2));
+  console.error('[DEBUG] sdkTypes.ListToolsRequestSchema exists:', !!sdkTypes.ListToolsRequestSchema);
+  console.error('[DEBUG] sdkTypes.CallToolRequestSchema exists:', !!sdkTypes.CallToolRequestSchema);
+} catch (e) {
+  console.error('[DEBUG] Failed to require @modelcontextprotocol/sdk/types.js:', e);
+}
+const { ListToolsRequestSchema, CallToolRequestSchema } = require('@modelcontextprotocol/sdk/types.js'); // SDKの型定義をインポート
 // MCP ServerとしてUniquityReporter CLIをラップし、MCP Hostからのリクエストを受けて実行する
-const { McpServer } = require('@modelcontextprotocol/sdk/server/mcp.js');
+// const { McpServer } = require('@modelcontextprotocol/sdk/server/mcp.js'); // 以前のインポート
+const { Server } = require('@modelcontextprotocol/sdk/server/index.js'); // claude-code-server と同様のインポートを試す
+// もし上記で Server が見つからない場合、SDKのメインエクスポートを試す:
+// const { Server } = require('@modelcontextprotocol/sdk');
 const { StdioServerTransport } = require('@modelcontextprotocol/sdk/server/stdio.js');
 const { spawn } = require('child_process');
 const zod = require('zod');
@@ -13,56 +25,24 @@ console.error('[LOG] Script started.'); // Output to stderr
 const transport = new StdioServerTransport(process.stdin, process.stdout);
 console.error('[LOG] StdioServerTransport initialized.'); // Output to stderr
 
-const server = new McpServer({
+const server = new Server({ // McpServer から Server に変更
   name: "uniquity-mcp",
   version: "0.1.0",
   description: "MCP Server for Uniquity Reporter",
-  // Optional: Add more server configurations if needed
-});
+  // Declare server capabilities, specifically that it supports tools
+}, {
+  capabilities: {
+    tools: {
+      // You can add more specific tool capabilities here if needed by the SDK version,
+      // for example, if it supports dynamic tool registration/unregistration:
+      // listChanged: true // Example, check SDK docs for v1.11.2
+    }
+  }});
 
 console.error('[LOG] McpServer instance created.'); // Output to stderr
-// Define the schema for the analyze_repository tool parameters
-const AnalyzeRepositoryParamsSchema = zod.object({
-  repositoryUrl: zod.string().url(), // Required positional argument
-  // Optional parameters based on README.md "提供ツール一覧"
-  openaiModel: zod.string().optional(),
-  logLevel: zod.enum(['info', 'debug', 'warn', 'error']).optional(), // Align with README.md (info, debug, warn, error)
-  logFile: zod.string().optional(),
-});
-console.error('[LOG] AnalyzeRepositoryParamsSchema defined.'); // Output to stderr
 
-// Manually define the JSON Schema for the tool's input parameters
-const AnalyzeRepositoryInputSchema = {
-  type: "object",
-  properties: {
-    repositoryUrl: {
-      type: "string",
-      format: "url",
-      description: "The URL of the Git repository to analyze."
-    },
-    openaiModel: {
-      type: "string",
-      description: "Optional: The OpenAI model to use (e.g., gpt-4o-mini)."
-    },
-    logLevel: {
-      type: "string",
-      enum: ['info', 'debug', 'warn', 'error'],
-      description: "Optional: The log level for the reporter."
-    },
-    logFile: {
-      type: "string",
-      description: "Optional: The path to a log file for the reporter."
-    }
-  },
-  required: ["repositoryUrl"]
-};
-
-server.tool(
-  'analyze_repository',
-  'Analyzes a Git repository and generates a report using Uniquity Reporter. The analysis is performed with repo=off mode, meaning no local repository copy is created or persisted.',
-  AnalyzeRepositoryInputSchema, // Use the manually defined JSON Schema
-  {}, // annotations (空のオブジェクトまたはnull/undefined)
-  async (params) => {
+// ツール実行ハンドラ (analyze_repository)
+const handleAnalyzeRepository = async (params) => {
     console.error('[LOG] "analyze_repository" tool handler invoked.'); // Output to stderr
     return new Promise((resolve, reject) => {
       const {
@@ -130,8 +110,57 @@ server.tool(
       });
     });
   }
-);
-console.error('[LOG] "analyze_repository" tool registered.'); // Output to stderr
+
+// ListToolsリクエストハンドラ
+server.setRequestHandler(ListToolsRequestSchema, async () => {
+  console.error('[LOG] ListToolsRequestSchema handler called.');
+  return {
+    tools: [
+      {
+        name: "analyze_repository",
+        description: "Analyzes a Git repository and generates a report using Uniquity Reporter. The analysis is performed with repo=off mode, meaning no local repository copy is created or persisted.",
+        inputSchema: { // ここで直接JSON Schemaを定義
+          type: "object",
+          properties: {
+            repositoryUrl: {
+              type: "string",
+              format: "url",
+              description: "The URL of the Git repository to analyze."
+            },
+            openaiModel: {
+              type: "string",
+              description: "Optional: The OpenAI model to use (e.g., gpt-4o-mini)."
+            },
+            logLevel: {
+              type: "string",
+              enum: ['info', 'debug', 'warn', 'error'],
+              description: "Optional: The log level for the reporter."
+            },
+            logFile: {
+              type: "string",
+              description: "Optional: The path to a log file for the reporter."
+            }
+          },
+          required: ["repositoryUrl"]
+        }
+        // outputSchema も必要であればここで定義
+      }
+    ]
+  };
+});
+console.error('[LOG] ListToolsRequestSchema handler registered.');
+
+// CallToolリクエストハンドラ (特定のツール名に基づいて処理を分岐)
+server.setRequestHandler(CallToolRequestSchema, async (request) => {
+  const { name, arguments: args } = request.params;
+  console.error(`[LOG] CallToolRequestSchema handler called for tool: ${name}`);
+  if (name === 'analyze_repository') {
+    return handleAnalyzeRepository(args);
+  }
+  // 他のツールがあればここで分岐
+  throw new Error(`Unknown tool: ${name}`); // McpError を使う方がより適切
+});
+console.error('[LOG] CallToolRequestSchema handler registered.');
 
 server.connect(transport).then(() => {
   console.error('[LOG] Uniquity-mcp Server connected successfully via server.connect().'); // Output to stderr
