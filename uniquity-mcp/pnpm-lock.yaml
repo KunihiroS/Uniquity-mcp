@@ -15,8 +15,8 @@ importers:
         specifier: ^16.4.5
         version: 16.5.0
       uniquity-reporter:
-        specifier: ^1.4.0
-        version: 1.4.2
+        specifier: ^1.4.3
+        version: 1.4.3
       winston:
         specifier: ^3.13.0
         version: 3.17.0
@@ -457,8 +457,8 @@ packages:
     resolution: {integrity: sha512-OZs6gsjF4vMp32qrCbiVSkrFmXtG/AZhY3t0iAMrMBiAZyV9oALtXO8hsrHbMXF9x6L3grlFuwW2oAz7cav+Gw==}
     engines: {node: '>= 0.6'}
 
-  uniquity-reporter@1.4.2:
-    resolution: {integrity: sha512-lKqWaU78es0srf14jdCsugbpWWXpc7XPYZbun2ox5smD4Zs5oWbXwXqXfIfFj6SlTUVvbZweTTWMxN+eapu26w==}
+  uniquity-reporter@1.4.3:
+    resolution: {integrity: sha512-0GpjaLGBbwkc71JskU19/ZcZudTU0Vfm7YmNqLbNgops60W/QncBXdd2oEP84s9ZqyTnca4vDU3sz5YZxO+1fQ==}
     engines: {node: '>=14.0.0'}
     hasBin: true
 
@@ -976,7 +976,7 @@ snapshots:
       media-typer: 1.1.0
       mime-types: 3.0.1
 
-  uniquity-reporter@1.4.2:
+  uniquity-reporter@1.4.3:
     dependencies:
       axios: 1.9.0
       commander: 11.1.0
