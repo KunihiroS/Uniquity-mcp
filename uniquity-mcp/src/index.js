@@ -28,7 +28,7 @@ console.error('[LOG] StdioServerTransport initialized.'); // Output to stderr
 
 const server = new Server({ // McpServer から Server に変更
   name: "uniquity-mcp",
-  version: "0.1.0",
+  version: "0.2.0",
   description: "MCP Server for Uniquity Reporter",
   // Declare server capabilities, specifically that it supports tools
 }, {
@@ -49,26 +49,40 @@ const handleAnalyzeRepository = async (params) => {
       const {
         repositoryUrl,
         openaiModel,
-        logLevel,
+        logEnabled,
         logFile
       } = params;
 
-      // Based on the provided CLI spec, command args are just --repo=off and the URL.
-      const commandArgs = ['--repo=off', repositoryUrl];
+      // コマンド引数の構築
+      const commandArgs = [];
 
-      // Environment variables are set based on optional tool parameters
-      // as per README.md "提供ツール一覧" and "注意事項".
-      // These will override any existing environment variables from the MCP Host if provided.
-      const env = { ...process.env }; // Keep existing process environment
+      // モデル指定（オプション）
       if (openaiModel) {
-        env.OPENAI_MODEL = openaiModel;
+        commandArgs.push(`--model=${openaiModel}`);
       }
-      if (logLevel) {
-        env.LOG_LEVEL = logLevel;
+
+      // ログ設定の検証
+      if (logFile && logEnabled !== 'on') {
+        console.error(`[WARN] logFile is ignored because log is not enabled. Set logEnabled='on' to enable file logging.`);
       }
-      if (logFile) {
-        env.LOG_FILE = logFile;
+
+      // ログ設定（オプション）
+      if (logEnabled === 'on' || logEnabled === 'off') {
+        commandArgs.push(`--log=${logEnabled}`);
+        
+        // ログファイル指定（オプション、logEnabledが'on'の場合のみ有効）
+        if (logFile && logEnabled === 'on') {
+          commandArgs.push(`--logfile=${logFile}`);
+        }
+      } else if (logEnabled) {
+        console.error(`[WARN] Invalid logEnabled value: ${logEnabled}. Must be 'on' or 'off'. Using default.`);
       }
+
+      // 最後に必須のリポジトリURLを追加
+      commandArgs.push(repositoryUrl);
+
+      // 環境変数の設定
+      const env = { ...process.env }; // 既存の環境変数を引き継ぐ
 
       // uniquity-reporterへのパスを解決
       // __dirname は build/ ディレクトリを指すため、node_modules は一つ上の階層にある
@@ -137,14 +151,14 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
               type: "string",
               description: "Optional: The OpenAI model to use (e.g., gpt-4o-mini)."
             },
-            logLevel: {
+            logEnabled: {
               type: "string",
-              enum: ['info', 'debug', 'warn', 'error'],
-              description: "Optional: The log level for the reporter."
+              enum: ['on', 'off'],
+              description: "Optional: Enable or disable verbose logging. 'on' to enable, 'off' to disable."
             },
             logFile: {
               type: "string",
-              description: "Optional: The path to a log file for the reporter."
+              description: "Optional: Full output file path for logs (Example: `./logs/debug.log`). If not specified, logs will be output to stderr."
             }
           },
           required: ["repositoryUrl"]
