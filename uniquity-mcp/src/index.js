@@ -1,13 +1,40 @@
 #!/usr/bin/env node
 
 
+// グローバルなログ設定
+let globalLogEnabled = process.env.LOG_ENABLED === 'on';
+
+// ロガー関数
+const logger = {
+  debug: (message) => {
+    if (globalLogEnabled) {
+      console.error(`[DEBUG] ${message}`);
+    }
+  },
+  info: (message) => {
+    if (globalLogEnabled) {
+      console.error(`[INFO] ${message}`);
+    }
+  },
+  warn: (message) => {
+    console.error(`[WARN] ${message}`);
+  },
+  error: (message, error = null) => {
+    if (error) {
+      console.error(`[ERROR] ${message}`, error);
+    } else {
+      console.error(`[ERROR] ${message}`);
+    }
+  }
+};
+
 try {
   const sdkTypes = require('@modelcontextprotocol/sdk/types.js');
-  console.error('[DEBUG] sdkTypes imported object:', JSON.stringify(Object.keys(sdkTypes), null, 2));
-  console.error('[DEBUG] sdkTypes.ListToolsRequestSchema exists:', !!sdkTypes.ListToolsRequestSchema);
-  console.error('[DEBUG] sdkTypes.CallToolRequestSchema exists:', !!sdkTypes.CallToolRequestSchema);
+  logger.debug('sdkTypes imported object: ' + JSON.stringify(Object.keys(sdkTypes), null, 2));
+  logger.debug('sdkTypes.ListToolsRequestSchema exists: ' + !!sdkTypes.ListToolsRequestSchema);
+  logger.debug('sdkTypes.CallToolRequestSchema exists: ' + !!sdkTypes.CallToolRequestSchema);
 } catch (e) {
-  console.error('[DEBUG] Failed to require @modelcontextprotocol/sdk/types.js:', e);
+  logger.error('Failed to require @modelcontextprotocol/sdk/types.js:', e);
 }
 const { ListToolsRequestSchema, CallToolRequestSchema } = require('@modelcontextprotocol/sdk/types.js'); // SDKの型定義をインポート
 // MCP ServerとしてUniquityReporter CLIをラップし、MCP Hostからのリクエストを受けて実行する
@@ -20,11 +47,11 @@ const { spawn } = require('child_process');
 const path = require('path'); // pathモジュールをインポート
 const zod = require('zod');
 
-console.error('[LOG] Script started.'); // Output to stderr
+logger.debug('Script started.');
 
 // process.stdin と process.stdout を明示的に渡す
 const transport = new StdioServerTransport(process.stdin, process.stdout);
-console.error('[LOG] StdioServerTransport initialized.'); // Output to stderr
+logger.debug('StdioServerTransport initialized.');
 
 const server = new Server({ // McpServer から Server に変更
   name: "uniquity-mcp",
@@ -40,11 +67,11 @@ const server = new Server({ // McpServer から Server に変更
     }
   }});
 
-console.error('[LOG] McpServer instance created.'); // Output to stderr
+logger.debug('McpServer instance created.');
 
 // ツール実行ハンドラ (analyze_repository)
 const handleAnalyzeRepository = async (params) => {
-    console.error('[LOG] "analyze_repository" tool handler invoked.'); // Output to stderr
+    logger.debug('"analyze_repository" tool handler invoked.');
     return new Promise((resolve, reject) => {
       const {
         repositoryUrl,
@@ -63,7 +90,7 @@ const handleAnalyzeRepository = async (params) => {
 
       // ログ設定の検証
       if (logFile && logEnabled !== 'on') {
-        console.error(`[WARN] logFile is ignored because log is not enabled. Set logEnabled='on' to enable file logging.`);
+        logger.warn(`logFile is ignored because log is not enabled. Set logEnabled='on' to enable file logging.`);
       }
 
       // ログ設定（オプション）
@@ -75,7 +102,7 @@ const handleAnalyzeRepository = async (params) => {
           commandArgs.push(`--logfile=${logFile}`);
         }
       } else if (logEnabled) {
-        console.error(`[WARN] Invalid logEnabled value: ${logEnabled}. Must be 'on' or 'off'. Using default.`);
+        logger.warn(`Invalid logEnabled value: ${logEnabled}. Must be 'on' or 'off'. Using default.`);
       }
 
       // 最後に必須のリポジトリURLを追加
@@ -88,8 +115,8 @@ const handleAnalyzeRepository = async (params) => {
       // __dirname は build/ ディレクトリを指すため、node_modules は一つ上の階層にある
       const reporterPath = path.resolve(__dirname, '..', 'node_modules', '.bin', 'uniquity-reporter');
 
-      console.error('[LOG] Spawning uniquity-reporter with args:', commandArgs); // Output to stderr
-      console.error('[LOG] Resolved reporter path:', reporterPath); // デバッグ用にパスを出力
+      logger.debug('Spawning uniquity-reporter with args: ' + JSON.stringify(commandArgs));
+      logger.debug('Resolved reporter path: ' + reporterPath);
 
       const child = spawn(reporterPath, commandArgs, { env }); // フルパスで指定
       let stdoutData = '';
@@ -97,34 +124,34 @@ const handleAnalyzeRepository = async (params) => {
 
       child.stdout.on('data', (data) => {
         stdoutData += data.toString();
-        // console.error('[LOG] uniquity-reporter stdout chunk received.'); // If needed, output to stderr
+        // logger.debug('uniquity-reporter stdout chunk received.');
       });
 
       child.stderr.on('data', (data) => {
         stderrData += data.toString();
-        console.error(`[LOG] uniquity-reporter stderr: ${data}`);
+        logger.warn(`uniquity-reporter stderr: ${data}`);
       });
 
       child.on('error', (error) => {
-        console.error(`[LOG] uniquity-reporter spawn error: ${error}`);
+        logger.error('uniquity-reporter spawn error:', error);
         reject(new Error(`Failed to start uniquity-reporter: ${error.message}`));
       });
 
       child.on('close', (code) => {
-        console.error(`[LOG] uniquity-reporter process exited with code ${code}.`); // Output to stderr
+        logger.debug(`uniquity-reporter process exited with code ${code}.`);
         if (code === 0) {
           // README states the output is Markdown.
           // Return it in the standard MCP tool result format.
           if (stdoutData.trim() === '') {
-            console.error("[WARN] uniquity-reporter output was empty, but process exited successfully."); // Output to stderr
+            logger.warn('uniquity-reporter output was empty, but process exited successfully.');
             // MCP Host might expect content, so provide a placeholder.
             resolve({ content: [{ type: "text", text: "(No output from reporter)" }] });
           } else {
-            console.error("[LOG] Raw stdoutData from uniquity-reporter (trimmed):", `"${stdoutData.trim()}"`); // Output to stderr
+            logger.debug('Raw stdoutData from uniquity-reporter (trimmed): "' + stdoutData.trim() + '"');
             resolve({ content: [{ type: "text", text: stdoutData.trim() }] });
           }
         } else {
-          console.error(`[LOG] uniquity-reporter failed with code ${code}. Stderr: ${stderrData}`);
+          logger.error(`uniquity-reporter failed with code ${code}. Stderr: ${stderrData}`);
           reject(new Error(`uniquity-reporter failed with code ${code}. Stderr: ${stderrData}`));
         }
       });
@@ -133,7 +160,7 @@ const handleAnalyzeRepository = async (params) => {
 
 // ListToolsリクエストハンドラ
 server.setRequestHandler(ListToolsRequestSchema, async () => {
-  console.error('[LOG] ListToolsRequestSchema handler called.');
+  logger.debug('ListToolsRequestSchema handler called.');
   return {
     tools: [
       {
@@ -168,24 +195,24 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
     ]
   };
 });
-console.error('[LOG] ListToolsRequestSchema handler registered.');
+logger.debug('ListToolsRequestSchema handler registered.');
 
 // CallToolリクエストハンドラ (特定のツール名に基づいて処理を分岐)
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const { name, arguments: args } = request.params;
-  console.error(`[LOG] CallToolRequestSchema handler called for tool: ${name}`);
+  logger.debug(`CallToolRequestSchema handler called for tool: ${name}`);
   if (name === 'analyze_repository') {
     return handleAnalyzeRepository(args);
   }
   // 他のツールがあればここで分岐
   throw new Error(`Unknown tool: ${name}`); // McpError を使う方がより適切
 });
-console.error('[LOG] CallToolRequestSchema handler registered.');
+logger.debug('CallToolRequestSchema handler registered.');
 
 server.connect(transport).then(() => {
-  console.error('[LOG] Uniquity-mcp Server connected successfully via server.connect().'); // Output to stderr
+  logger.info('Uniquity-mcp Server connected successfully via server.connect().');
 }).catch((error) => {
-  console.error('[LOG] Failed to connect Uniquity MCP Server via server.connect():', error);
+  logger.error('Failed to connect Uniquity MCP Server via server.connect():', error);
   process.exit(1);
 });
 
@@ -196,11 +223,11 @@ process.on('SIGINT', () => {
     // [LOG] Server stopped via SIGINT.
     process.exit(0);
   }).catch(err => {
-    console.error('[LOG] Error stopping server via SIGINT:', err);
+    logger.error('Error stopping server via SIGINT:', err);
     process.exit(1);
   });
 });
-console.error('[LOG] SIGINT handler registered.'); // Output to stderr
+logger.debug('SIGINT handler registered.');
 
 process.on('SIGTERM', () => {
   // [LOG] SIGTERM received, shutting down Uniquity MCP Server...
@@ -208,8 +235,8 @@ process.on('SIGTERM', () => {
     // [LOG] Server stopped via SIGTERM.
     process.exit(0);
   }).catch(err => {
-    console.error('[LOG] Error stopping server via SIGTERM:', err);
+    logger.error('Error stopping server via SIGTERM:', err);
     process.exit(1);
   });
 });
-console.error('[LOG] SIGTERM handler registered.'); // Output to stderr
+logger.debug('SIGTERM handler registered.');
