@@ -143,8 +143,7 @@ MCP Serverは `repo=off` のみ対応です。
 }
 ```
 
-- `repo` パラメータは必須で `off` 固定です。
-- レポートファイル保存（repo=on）はサポートしません。
+- 本MCPはレポートファイル保存（repo=on）はサポートしません。
 - ファイル保存が必要な場合は、Host側で標準出力をファイルに保存してください。
 - `LOG_FILE`（ログファイル名・パス）は環境変数で指定できますが、tool引数としてもoptionalで指定可能です。
 
@@ -157,9 +156,9 @@ MCP Serverは `repo=off` のみ対応です。
 | 引数         | 型      | 必須 | 説明                                      |
 |--------------|---------|------|-------------------------------------------|
 | repoUrl      | string  | ○    | 分析対象のGitHubリポジトリURL              |
-| openaiModel  | string  | ×    | 使用するOpenAIモデル名（例: o3-mini, gpt-4.1-nano など） |
-| logLevel     | string  | ×    | ログ出力レベル（info, debug, warn, error） |
-| logFile      | string  | ×    | ログファイルのパス（指定しない場合は環境変数LOG_FILE、なければデフォルト） |
+| model        | string  | ×    | 使用するOpenAIモデル名（例: o3-mini, gpt-4.1-nano など） |
+| log          | string  | ×    | ログ出力有無（on/off指定可。省略時はデフォルトoff）|
+| logfile      | string  | ×    | ログファイルのパス（ファイル名含む絶対または相対パスを指定、例: ./logs/uniquity-mcp.log。未指定時はstderr出力）|
 
 ### 2. list_tools
 - **説明**: MCP Serverが提供するツールの一覧と仕様（引数・返却値）を返します。
@@ -213,3 +212,10 @@ uniquity-repoter 側でとくに logFile の書き出しがどのように処理
 本mcp-serverでは repo=off がハードコーディングされており、その仕様については要求通りだが log 記録と書き出しについては要求が曖昧で実際の実装が把握できていない
 
 上記いずれも調査対象は uniquity-reporter
+
+### 2025/5/18
+- TODO:
+  - ToolをUniquityReporter本体の最新仕様（バージョン指定・npxコマンド形式）に合わせて修正
+  - `log=off`のハードコードを廃止し、柔軟なログ設定に対応
+  - MCP Hostの設定サンプルを最新仕様に更新
+  - README内のコマンド例・注意事項もバージョン指定推奨の内容に統一
