@@ -115,7 +115,6 @@ pnpm start
 | `TAVILY_API_KEY` | はい | - | Tavily APIキー |
 | `openaiModel` | いいえ | `gpt-4.1-nano` | 使用するOpenAIモデル |
 | `logEnabled` | いいえ | `off` | ログ出力の有効/無効 (`on`/`off`) |
-| `logFile` | いいえ | - | ログファイルのパス（未設定時はstderrに出力） |
 
 ## 開発ガイド
 
@@ -191,7 +190,6 @@ MIT License
 - **オプション（未指定時はconfig/config.jsのデフォルト値が利用されます）**
     - `openaiModel` : 使用するOpenAIモデル名（例: o3-mini, gpt-4.1-nano など）
     - `logEnabled` : ログ出力の有効/無効 (`on`/`off`)
-    - `logFile` : ログファイルのパス
 
 ### 代表的なMCP Host設定例
 
@@ -229,7 +227,6 @@ MCP Serverは `repo=off` のみ対応です。
 | repositoryUrl| string  | ○    | 分析対象のGitHubリポジトリURL              |
 | openaiModel  | string  | ×    | 使用するOpenAIモデル名（例: o3-mini, gpt-4.1-nano など） |
 | logEnabled   | string  | ×    | ログ出力の有効/無効 (`on`/`off`、デフォルト: `off`） |
-| logFile      | string  | ×    | ログファイルのパス（ファイル名含む絶対または相対パスを指定、例: ./logs/uniquity-mcp.log。未指定時はstderr出力）|
 
 ### 2. list_tools
 - **説明**: MCP Serverが提供するツールの一覧と仕様（引数・返却値）を返します。

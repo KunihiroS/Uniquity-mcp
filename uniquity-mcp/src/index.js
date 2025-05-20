@@ -76,8 +76,7 @@ const handleAnalyzeRepository = async (params) => {
       const {
         repositoryUrl,
         openaiModel,
-        logEnabled,
-        logFile
+        logEnabled
       } = params;
 
       // コマンド引数の構築
@@ -89,18 +88,13 @@ const handleAnalyzeRepository = async (params) => {
       }
 
       // ログ設定の検証
-      if (logFile && logEnabled !== 'on') {
-        logger.warn(`logFile is ignored because log is not enabled. Set logEnabled='on' to enable file logging.`);
-      }
+
 
       // ログ設定（オプション）
       if (logEnabled === 'on' || logEnabled === 'off') {
         commandArgs.push(`--log=${logEnabled}`);
         
-        // ログファイル指定（オプション、logEnabledが'on'の場合のみ有効）
-        if (logFile && logEnabled === 'on') {
-          commandArgs.push(`--logfile=${logFile}`);
-        }
+
       } else if (logEnabled) {
         logger.warn(`Invalid logEnabled value: ${logEnabled}. Must be 'on' or 'off'. Using default.`);
       }
@@ -182,10 +176,6 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
               type: "string",
               enum: ['on', 'off'],
               description: "Optional: Enable or disable verbose logging. 'on' to enable, 'off' to disable."
-            },
-            logFile: {
-              type: "string",
-              description: "Optional: Full output file path for logs (Example: `./logs/debug.log`). If not specified, logs will be output to stderr."
             }
           },
           required: ["repositoryUrl"]
