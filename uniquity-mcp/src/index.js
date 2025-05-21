@@ -55,7 +55,6 @@ logger.debug('StdioServerTransport initialized.');
 
 const server = new Server({ /// Changed from McpServer to Server
   name: "uniquity-mcp",
-  version: "0.2.0",
   description: "MCP Server for Uniquity Reporter",
   /// Declare server capabilities, specifically that it supports tools
 }, {
@@ -100,14 +99,15 @@ const handleAnalyzeRepository = async (params) => {
       /// Set environment variables
       const env = { ...process.env }; /// Inherit existing environment variables
 
-      /// Resolve path to uniquity-reporter
-      /// __dirname points to build/ directory, so node_modules is one level up
-      const reporterPath = path.resolve(__dirname, '..', 'node_modules', '.bin', 'uniquity-reporter');
+      /// Set PATH to include node_modules/.bin for bin command resolution
+      env.PATH = [
+        path.resolve(__dirname, '..', 'node_modules', '.bin'),
+        process.env.PATH
+      ].join(':');
 
       logger.debug('Spawning uniquity-reporter with args: ' + JSON.stringify(commandArgs));
-      logger.debug('Resolved reporter path: ' + reporterPath);
-
-      const child = spawn(reporterPath, commandArgs, { env }); // Full PATH
+      // コマンド名だけでspawnし、PATHで解決
+      const child = spawn('uniquity-reporter', commandArgs, { env });
       let stdoutData = '';
       let stderrData = '';
 
