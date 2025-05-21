@@ -1,6 +1,6 @@
 {
   "name": "uniquity-mcp",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "MCP server for UniquityReporter",
   "type": "commonjs",
   "main": "build/index.js",
@@ -16,7 +16,8 @@
   "scripts": {
     "build": "rm -rf build && mkdir -p build && cp -r src/* build/",
     "start": "node build/index.js",
-    "prepublishOnly": "pnpm run build",
+    "prepublishOnly": "pnpm run build && cp ../README.md ./README.md",
+    "postpublish": "rm ./README.md",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
