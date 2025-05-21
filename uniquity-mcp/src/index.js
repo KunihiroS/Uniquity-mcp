@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+const pkg = require('../package.json');
 
 /// Global log settings
 let globalLogEnabled = process.env.LOG_ENABLED === 'on';
@@ -55,6 +56,7 @@ logger.debug('StdioServerTransport initialized.');
 
 const server = new Server({ /// Changed from McpServer to Server
   name: "uniquity-mcp",
+  version: pkg.version,
   description: "MCP Server for Uniquity Reporter",
   /// Declare server capabilities, specifically that it supports tools
 }, {
