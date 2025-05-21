@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 
 
-// グローバルなログ設定
+/// Global log settings
 let globalLogEnabled = process.env.LOG_ENABLED === 'on';
 
-// ロガー関数
+/// Logger function
 const logger = {
   debug: (message) => {
     if (globalLogEnabled) {
@@ -36,28 +36,28 @@ try {
 } catch (e) {
   logger.error('Failed to require @modelcontextprotocol/sdk/types.js:', e);
 }
-const { ListToolsRequestSchema, CallToolRequestSchema } = require('@modelcontextprotocol/sdk/types.js'); // SDKの型定義をインポート
-// MCP ServerとしてUniquityReporter CLIをラップし、MCP Hostからのリクエストを受けて実行する
-// const { McpServer } = require('@modelcontextprotocol/sdk/server/mcp.js'); // 以前のインポート
-const { Server } = require('@modelcontextprotocol/sdk/server/index.js'); // claude-code-server と同様のインポートを試す
-// もし上記で Server が見つからない場合、SDKのメインエクスポートを試す:
-// const { Server } = require('@modelcontextprotocol/sdk');
+const { ListToolsRequestSchema, CallToolRequestSchema } = require('@modelcontextprotocol/sdk/types.js'); 
+// Import type from SDE.
+/// Wrap UniquityReporter CLI as an MCP Server and execute requests from MCP Host
+/// Previous import: const { McpServer } = require('@modelcontextprotocol/sdk/server/mcp.js');
+const { Server } = require('@modelcontextprotocol/sdk/server/index.js'); /// Try import similar to claude-code-server
+/// If Server is not found above, try the main export of the SDK: const { Server } = require('@modelcontextprotocol/sdk');
 const { StdioServerTransport } = require('@modelcontextprotocol/sdk/server/stdio.js');
 const { spawn } = require('child_process');
-const path = require('path'); // pathモジュールをインポート
+const path = require('path'); /// Import path module
 const zod = require('zod');
 
 logger.debug('Script started.');
 
-// process.stdin と process.stdout を明示的に渡す
+/// Explicitly pass process.stdin and process.stdout
 const transport = new StdioServerTransport(process.stdin, process.stdout);
 logger.debug('StdioServerTransport initialized.');
 
-const server = new Server({ // McpServer から Server に変更
+const server = new Server({ /// Changed from McpServer to Server
   name: "uniquity-mcp",
   version: "0.2.0",
   description: "MCP Server for Uniquity Reporter",
-  // Declare server capabilities, specifically that it supports tools
+  /// Declare server capabilities, specifically that it supports tools
 }, {
   capabilities: {
     tools: {
@@ -69,7 +69,7 @@ const server = new Server({ // McpServer から Server に変更
 
 logger.debug('McpServer instance created.');
 
-// ツール実行ハンドラ (analyze_repository)
+/// Tool execution handler (analyze_repository)
 const handleAnalyzeRepository = async (params) => {
     logger.debug('"analyze_repository" tool handler invoked.');
     return new Promise((resolve, reject) => {
@@ -79,40 +79,35 @@ const handleAnalyzeRepository = async (params) => {
         logEnabled
       } = params;
 
-      // コマンド引数の構築
+      /// Build command arguments
       const commandArgs = [];
 
-      // モデル指定（オプション）
+      /// Model specification (optional)
       if (openaiModel) {
         commandArgs.push(`--model=${openaiModel}`);
       }
 
-      // ログ設定の検証
-
-
-      // ログ設定（オプション）
+      /// Log setting (optional)
       if (logEnabled === 'on' || logEnabled === 'off') {
         commandArgs.push(`--log=${logEnabled}`);
-        
-
       } else if (logEnabled) {
         logger.warn(`Invalid logEnabled value: ${logEnabled}. Must be 'on' or 'off'. Using default.`);
       }
 
-      // 最後に必須のリポジトリURLを追加
+      /// Add the required repository URL at the end
       commandArgs.push(repositoryUrl);
 
-      // 環境変数の設定
-      const env = { ...process.env }; // 既存の環境変数を引き継ぐ
+      /// Set environment variables
+      const env = { ...process.env }; /// Inherit existing environment variables
 
-      // uniquity-reporterへのパスを解決
-      // __dirname は build/ ディレクトリを指すため、node_modules は一つ上の階層にある
+      /// Resolve path to uniquity-reporter
+      /// __dirname points to build/ directory, so node_modules is one level up
       const reporterPath = path.resolve(__dirname, '..', 'node_modules', '.bin', 'uniquity-reporter');
 
       logger.debug('Spawning uniquity-reporter with args: ' + JSON.stringify(commandArgs));
       logger.debug('Resolved reporter path: ' + reporterPath);
 
-      const child = spawn(reporterPath, commandArgs, { env }); // フルパスで指定
+      const child = spawn(reporterPath, commandArgs, { env }); // Full PATH
       let stdoutData = '';
       let stderrData = '';
 
@@ -152,7 +147,7 @@ const handleAnalyzeRepository = async (params) => {
     });
   }
 
-// ListToolsリクエストハンドラ
+// ListTools request hundler
 server.setRequestHandler(ListToolsRequestSchema, async () => {
   logger.debug('ListToolsRequestSchema handler called.');
   return {
@@ -160,7 +155,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       {
         name: "analyze_repository",
         description: "Analyzes a Git repository and generates a report using Uniquity Reporter. The analysis is performed with repo=off mode, meaning no local repository copy is created or persisted.",
-        inputSchema: { // ここで直接JSON Schemaを定義
+        inputSchema: { // Json Schema definition
           type: "object",
           properties: {
             repositoryUrl: {
@@ -180,22 +175,22 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           },
           required: ["repositoryUrl"]
         }
-        // outputSchema も必要であればここで定義
+        // outputSchema if needed.
       }
     ]
   };
 });
-logger.debug('ListToolsRequestSchema handler registered.');
+  logger.debug('ListToolsRequestSchema handler registered.');
 
-// CallToolリクエストハンドラ (特定のツール名に基づいて処理を分岐)
+/// CallTool request handler (branch processing based on specific tool name)
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const { name, arguments: args } = request.params;
   logger.debug(`CallToolRequestSchema handler called for tool: ${name}`);
   if (name === 'analyze_repository') {
     return handleAnalyzeRepository(args);
   }
-  // 他のツールがあればここで分岐
-  throw new Error(`Unknown tool: ${name}`); // McpError を使う方がより適切
+  /// Branch for other tools if available
+  throw new Error(`Unknown tool: ${name}`); /// It would be more appropriate to use McpError
 });
 logger.debug('CallToolRequestSchema handler registered.');
 
@@ -208,9 +203,9 @@ server.connect(transport).then(() => {
 
 // Graceful shutdown
 process.on('SIGINT', () => {
-  // [LOG] SIGINT received, shutting down Uniquity MCP Server...
+  /// SIGINT received, shutting down Uniquity MCP Server...
   server.close().then(() => {
-    // [LOG] Server stopped via SIGINT.
+    /// Server stopped via SIGINT.
     process.exit(0);
   }).catch(err => {
     logger.error('Error stopping server via SIGINT:', err);
@@ -220,9 +215,9 @@ process.on('SIGINT', () => {
 logger.debug('SIGINT handler registered.');
 
 process.on('SIGTERM', () => {
-  // [LOG] SIGTERM received, shutting down Uniquity MCP Server...
+  /// SIGTERM received, shutting down Uniquity MCP Server...
   server.close().then(() => {
-    // [LOG] Server stopped via SIGTERM.
+    /// Server stopped via SIGTERM.
     process.exit(0);
   }).catch(err => {
     logger.error('Error stopping server via SIGTERM:', err);

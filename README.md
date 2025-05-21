@@ -1,32 +1,32 @@
 # Uniquity MCP Server
 
-## 概要
+## Overview
 
-Uniquity MCP Serverは、UniquityReporterの機能をMCP（Model Context Protocol）経由で外部ツールやAIエージェントから利用可能にするためのサーバーです。
+Uniquity MCP Server is a server that makes the functions of UniquityReporter available to external tools and AI agents via MCP (Model Context Protocol).
 
 > **UniquityReporter**: [UniquityReporter](https://github.com/KunihiroS/UniquityReporter)
 
-- UniquityReporterの分析機能をMCP HostやAIエージェントから呼び出せるようにする
-- コアロジックとインターフェースを分離し、保守性・拡張性を高める
-- 標準化されたプロトコルで様々なクライアントから利用可能にする
+- Enables the analysis functions of UniquityReporter to be called from MCP Host or AI agents.
+- Separates core logic and interface to improve maintainability and extensibility.
+- Makes it available from various clients through a standardized protocol.
 
-## Release note
+## Release Note
 
 - 0.1.0
-    - 初版
+    - Initial version
 
 ## MCP Host Settings
 
-### 必須・オプション環境変数
-- **必須（MCP Hostから必ず渡すこと）**
-    - `GITHUB_TOKEN` : GitHub API用トークン
-    - `OPENAI_API_KEY` : OpenAI APIキー
-    - `TAVILY_API_KEY` : Tavily APIキー
-- **オプション（未指定時はconfig/config.jsのデフォルト値が利用されます）**
-    - `openaiModel` : 使用するOpenAIモデル名（例: o3-mini, gpt-4.1-nano など）
-    - `logEnabled` : ログ出力の有効/無効 (`on`/`off`)
+### Required and Optional Environment Variables
+- **Required (Must be passed from MCP Host)**
+    - `GITHUB_TOKEN`: Token for GitHub API
+    - `OPENAI_API_KEY`: OpenAI API key
+    - `TAVILY_API_KEY`: Tavily API key
+- **Optional (If not specified, the default values in config/config.js will be used)**
+    - `openaiModel`: Name of the OpenAI model to use (e.g., o3-mini, gpt-4.1-nano, etc.)
+    - `logEnabled`: Enable/disable log output (`on`/`off`)
 
-### 代表的なMCP Host設定例
+### Example MCP Host Configuration
 
 ```json
 {
@@ -44,171 +44,163 @@ Uniquity MCP Serverは、UniquityReporterの機能をMCP（Model Context Protoco
   }
 }
 ```
-- env 設定の secrets は必須です。
-- 本MCPはレポート及びログファイル保存はサポートしません。
-- ファイル保存が必要な場合は、Host側で標準出力をファイルに保存してください。
+- Secrets in env settings are required.
+- This MCP does not support report and log file saving.
+- If file saving is required, save the standard output to a file on the Host side.
 
-## 提供ツール一覧（MCP Server）
+## List of Provided Tools (MCP Server)
 
 ### 1. analyze_repository
-- **説明**: 指定したGitHubリポジトリの類似性分析レポートを生成します。レポートは常に標準出力にMarkdown形式で返されます。
-- **返却値**: Markdown形式のレポート本文（標準出力）
+- **Description**: Generates a similarity analysis report for the specified GitHub repository. The report is always returned in Markdown format to standard output.
+- **Return Value**: Report body in Markdown format (standard output)
 
-| 引数         | 型      | 必須 | 説明                                      |
-|--------------|---------|------|-------------------------------------------|
-| repositoryUrl| string  | ○    | 分析対象のGitHubリポジトリURL              |
-| openaiModel  | string  | ×    | 使用するOpenAIモデル名（例: o3-mini, gpt-4.1-nano など） |
-| logEnabled   | string  | ×    | ログ出力の有効/無効 (`on`/`off`、デフォルト: `off`） |
+| Argument        | Type    | Required | Description                                      |
+|-----------------|---------|----------|--------------------------------------------------|
+| repositoryUrl   | string  | Yes      | GitHub repository URL to analyze                 |
+| openaiModel     | string  | No       | Name of the OpenAI model to use (e.g., o3-mini, gpt-4.1-nano, etc.) |
+| logEnabled      | string  | No       | Enable/disable log output (`on`/`off`, default: `off`) |
 
 ### 2. list_tools
-- **説明**: MCP Serverが提供するツールの一覧と仕様（引数・返却値）を返します。
-- **返却値**: MCP Serverで利用可能なツールの配列（各ツールのname, description, parameterSchema, returnSchemaを含む）
+- **Description**: Returns a list of tools provided by the MCP Server and their specifications (arguments and return values).
+- **Return Value**: Array of tools available in the MCP Server (including name, description, parameterSchema, returnSchema for each tool)
 
-| 引数 | 型 | 必須 | 説明 |
-|------|----|------|------|
-| なし |    |      |      |
+| Argument | Type | Required | Description |
+|----------|------|----------|-------------|
+| None     |      |          |             |
 
 ---
 
-これにより、MCP Hostやクライアントから「どんなツールがあるか」「どう呼び出せばいいか」が明確に分かります。
+This makes it clear to MCP Hosts and clients "what tools are available" and "how to call them."
 
-### 注意事項
-- MCP Serverは標準出力のみ対応です。
-- `openaiModel`と`logEnabled`はツール引数で動的に指定できます。
-- オプション値は省略可能で、省略時は UniquityReporter のデフォルト値が使われます。
+### Notes
+- MCP Server supports standard output only.
+- `openaiModel` and `logEnabled` can be dynamically specified as tool arguments.
+- Optional values can be omitted, and if omitted, the default values of UniquityReporter will be used.
 
-### 依存パッケージ（uniquity-reporter）のバージョン管理について
+### Version Management of Dependency Package (uniquity-reporter)
 
-- `package.json` の `uniquity-reporter` 依存は `^1.4.4` のように指定しています。
-  - これにより、マイナー・パッチアップデートは自動的に追従されますが、メジャーバージョンアップ（2.x系など）は自動では追従されません。
-  - 完全に "常に最新" を保証したい場合は、MCP Server自体のバージョンアップと公開を行い、ユーザーには `npx uniquity-mcp@latest` での利用を推奨してください。
+- The dependency of `uniquity-reporter` in `package.json` is specified as `^1.4.4`.
+  - This allows minor and patch updates to be automatically followed, but major version updates (such as 2.x) will not be automatically followed.
+  - If you want to guarantee "always the latest," perform version updates and releases of the MCP Server itself, and recommend users to use `npx uniquity-mcp@latest`.
 
-- **npxのキャッシュ挙動に注意**
-  - npxは一度取得したパッケージと依存をキャッシュします。
-  - パッケージや依存の最新版を常に利用したい場合は、MCP Host設定例のように `"uniquity-mcp@latest"` を明示し、ユーザーにもキャッシュクリア（`npx clear-npx-cache` など）を案内すると安全です。
+- **Note on npx Cache Behavior**
+  - npx caches the retrieved packages and dependencies.
+  - If you want to always use the latest version of the package and dependencies, explicitly specify `"uniquity-mcp@latest"` as in the MCP Host configuration example, and guide users to clear the cache (`npx clear-npx-cache`, etc.) for safety.
 
-- 依存パッケージの仕様変更や重大なアップデートがあった場合は、MCP Serverも速やかにバージョンアップし、リリースノートやREADMEで周知してください。
+- If there are specification changes or significant updates to the dependency package, promptly version up the MCP Server and announce it in the release notes or README.
 
+## Architecture Overview
 
-## アーキテクチャ概要
+- This repository manages only the implementation of the MCP Server and depends on the `uniquity-reporter` npm package for core logic.
+- Receives requests from MCP Host, calls UniquityReporter CLI, and returns the results.
+- Uses standard input/output (stdin/stdout) based inter-process communication.
+- Reports are always output to standard output and are not saved to files.
 
-- 本リポジトリはMCP Serverの実装のみを管理し、コアロジックは`uniquity-reporter` npmパッケージに依存します
-- MCP Hostからのリクエストを受け取り、UniquityReporter CLIを呼び出して結果を返します
-- 標準入出力（stdin/stdout）ベースのプロセス間通信を使用します
-- レポートは常に標準出力に出力され、ファイルには保存されません
-
-## アーキテクチャ図
+## Architecture Diagram
 
 ```mermaid
 graph LR
     subgraph MCP Host
-        Client[クライアントアプリケーション]
+        Client[Client Application]
     end
-    
+
     subgraph MCP Server
         Server[Uniquity MCP Server]
-        Server -->|コマンド実行| UniquityReporter[UniquityReporter CLI]
+        Server -->|Command Execution| UniquityReporter[UniquityReporter CLI]
     end
-    
+
     subgraph External Services
         GitHub[GitHub API]
         OpenAI[OpenAI API]
         Tavily[Tavily API]
     end
-    
-    Client -- MCPプロトコル --> Server
-    Server -- JSONレスポンス --> Client
-    UniquityReporter -- リポジトリ分析 --> GitHub
-    UniquityReporter -- コード分析 --> OpenAI
-    UniquityReporter -- ウェブ検索 --> Tavily
+
+    Client -- MCP Protocol --> Server
+    Server -- JSON Response --> Client
+    UniquityReporter -- Repository Analysis --> GitHub
+    UniquityReporter -- Code Analysis --> OpenAI
+    UniquityReporter -- Web Search --> Tavily
 ```
 
-## 技術スタック
+## Technology Stack
 
-- **ランタイム**: Node.js 18+
-- **主要パッケージ**:
-  - `@modelcontextprotocol/sdk`: MCPプロトコル実装
-  - `uniquity-reporter`: コア分析エンジン
-  - `winston`: ロギング
-  - `dotenv`: 環境変数管理
-- **開発ツール**:
+- **Runtime**: Node.js 18+
+- **Main Packages**:
+  - `@modelcontextprotocol/sdk`: MCP protocol implementation
+  - `uniquity-reporter`: Core analysis engine
+  - `winston`: Logging
+  - `dotenv`: Environment variable management
+- **Development Tools**:
   - TypeScript
   - ESLint
   - Prettier
-  - Jest (テスト)
+  - Jest (Testing)
 
-### プロジェクト構成
+### Project Structure
 
 ```
 uniquity-mcp/
-├── uniquity-mcp/           # メインプロジェクト
+├── uniquity-mcp/           # Main Project
 │   ├── src/
-│   │   └── index.js       # エントリーポイント
+│   │   └── index.js       # Entry Point
 │   └── package.json
-├── .github/              # GitHub Actions設定
-└── README.md             # このファイル
+├── .github/              # GitHub Actions Configuration
+└── README.md             # This File
 ```
 
-## 開発ガイド
+## Development Guide
 
-### インストール
+### Installation
 
-#### 依存関係のインストール
+#### Installing Dependencies
 
 ```bash
-# 依存パッケージのインストール
+# Install dependency packages
 pnpm install
 
-# 開発依存関係も含めてインストール
+# Install including development dependencies
 pnpm install --dev
 ```
 
-#### ビルド
+#### Build
 
 ```bash
 pnpm run build
 ```
 
-#### 開発モードで起動
+#### Start in Development Mode
 
 ```bash
 pnpm run dev
 ```
 
-### 使用方法
+### Usage
 
-#### MCP Serverの起動
+#### Starting the MCP Server
 
 ```bash
-# ビルド後
+# After building
 node dist/index.js
 
-# または直接実行
+# Or run directly
 pnpm start
 ```
 
-
-### 開発サーバーの起動
+### Starting the Development Server
 
 ```bash
-# 開発モードで起動（ホットリロード有効）
+# Start in development mode (with hot reload)
 pnpm run dev
 
-# ビルドしてから実行
+# Build and then run
 pnpm run build
 pnpm start
 ```
 
-## ライセンス
+## License
 
 MIT License
 
-## 作者
+## Author
 
 [KunihiroS](https://github.com/KunihiroS)
-
-## 開発進捗
-
-### TODO
-- npm へ登録する
-- npm から npx で導入テスト
