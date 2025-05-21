@@ -147,7 +147,7 @@ const handleAnalyzeRepository = async (params) => {
     });
   }
 
-// ListTools request hundler
+// ListTools request handler
 server.setRequestHandler(ListToolsRequestSchema, async () => {
   logger.debug('ListToolsRequestSchema handler called.');
   return {
