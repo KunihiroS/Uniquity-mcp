@@ -1,5 +1,7 @@
 # Uniquity MCP Server
 
+[![smithery badge](https://smithery.ai/badge/@KunihiroS/uniquity-mcp)](https://smithery.ai/server/@KunihiroS/uniquity-mcp)
+
 ## Overview
 
 Uniquity MCP Server is a server that makes the functions of UniquityReporter available to external tools and AI agents via MCP (Model Context Protocol).
@@ -151,6 +153,14 @@ uniquity-mcp/
 ## Development Guide
 
 ### Installation
+
+### Installing via Smithery
+
+To install uniquity-mcp for Claude Desktop automatically via [Smithery](https://smithery.ai/server/@KunihiroS/uniquity-mcp):
+
+```bash
+npx -y @smithery/cli install @KunihiroS/uniquity-mcp --client claude
+```
 
 #### Installing Dependencies
 

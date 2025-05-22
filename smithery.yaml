@@ -1,0 +1,45 @@
+# Smithery configuration file: https://smithery.ai/docs/build/project-config
+
+build:
+  dockerBuildPath: uniquity-mcp
+startCommand:
+  type: stdio
+  commandFunction:
+    # A JS function that produces the CLI command based on the given config to start the MCP on stdio.
+    |-
+    (config) => ({
+      command: 'node',
+      args: ['build/index.js'],
+      env: {
+        GITHUB_TOKEN: config.githubToken,
+        OPENAI_API_KEY: config.openaiApiKey,
+        TAVILY_API_KEY: config.tavilyApiKey,
+        LOG_ENABLED: config.logEnabled || 'off'
+      }
+    })
+  configSchema:
+    # JSON Schema defining the configuration options for the MCP.
+    type: object
+    required:
+      - githubToken
+      - openaiApiKey
+      - tavilyApiKey
+    properties:
+      githubToken:
+        type: string
+        description: GitHub API token
+      openaiApiKey:
+        type: string
+        description: OpenAI API key
+      tavilyApiKey:
+        type: string
+        description: Tavily API key
+      logEnabled:
+        type: string
+        default: off
+        description: Enable or disable verbose logging (optional)
+  exampleConfig:
+    githubToken: ghp_exampletoken1234567890
+    openaiApiKey: sk-example1234567890
+    tavilyApiKey: tavily-exampletoken
+    logEnabled: on
